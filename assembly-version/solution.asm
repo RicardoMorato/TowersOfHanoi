@@ -11,25 +11,24 @@ section .data
     STDOUT      equ 0x1 ; saída padrão
 
     ; Mensagem de input de quantidade de discos
-    msg_disk db "Enter the number of disks for the problem: "
-    len equ $-msg_disk
+    INPUT_DISK_MSG db "Enter the number of disks for the problem: "
+    len equ $-INPUT_DISK_MSG
 
     ; Mensagem de erro, o número de discos deve ser um numero positivo e maior que 0
-    error_msg db "Error: Invalid number entered. The number of disks must be > 0", EOL, 0
-    error_len equ $-error_msg
+    INPUT_ERROR_MESSAGE db "Error: Invalid number entered. The number of disks must be > 0", EOL, 0
+    error_len equ $-INPUT_ERROR_MESSAGE
 
     ; Mensagem para exibir o movimento dos discos
-    msg:                db "Move disk "
-    disk:               db  " "           ; disco a ser movido
+    OUTPUT_MESSAGE:     db "Move disk "
+    DISK_NUMBER:        db  " "           ; disco a ser movido
                         db " from "       ; de
-    tower_source:       db " "            ; torre de saída
+    TOWER_SOURCE:       db " "            ; torre de saída
                         db " to "         ; para
-    tower_destination:  db " ", EOL       ; torre de destino
-    output_length       equ $-msg
+    TOWER_DESTINATION:  db " ", EOL       ; torre de destino
+    OUTPUT_LENGTH       equ $-OUTPUT_MESSAGE
 
 section .bss
-    num_disks resb 3 ; buffer para a entrada do número de discos
-    num_disks_int resd 1 ; armazenamento do número de discos como inteiro
+    NUM_DISKS resb 3 ; buffer para a entrada do número de discos
 
 section .text
     global _start
@@ -38,14 +37,14 @@ _start:
     ; Exibir a mensagem para o usuário
     mov eax, sys_write
     mov ebx, STDOUT
-    mov ecx, msg_disk
+    mov ecx, INPUT_DISK_MSG
     mov edx, len
     int sys_call
 
     ; Ler a entrada do usuário
     mov eax, sys_read
     mov ebx, STDIN
-    mov ecx, num_disks
+    mov ecx, NUM_DISKS
     mov edx, 2                     ; tamanho da entrada (ler até 2 algarismos)
     int sys_call
 
@@ -63,7 +62,7 @@ _start:
 
 ; Função para verificar e converter a entrada de string para inteiro
 converter_valor:
-    lea esi, [num_disks]
+    lea esi, [NUM_DISKS]
     mov ecx, 2 ; tamanho máximo da entrada
     call string_to_int
     cmp eax, 0
@@ -74,7 +73,7 @@ invalid_number:
     ; Exibir a mensagem de erro
     mov eax, sys_write
     mov ebx, STDOUT
-    mov ecx, error_msg
+    mov ecx, INPUT_ERROR_MESSAGE
     mov edx, error_len
     int sys_call
 
@@ -164,18 +163,18 @@ print_disk_movement:
 
     mov eax, [ebp+8]             ; coloca no registrador eax o disco a ser movido
     add al, 48                   ; conversão na tabela ASCII
-    mov [disk], al               ; coloca o valor em [disk] para o print
+    mov [DISK_NUMBER], al               ; coloca o valor em [DISK_NUMBER] para o print
 
     mov eax, [ebp+12]            ; coloca no registrador eax a torre de onde o disco saiu
     add al, 64                   ; conversão na tabela ASCII
-    mov [tower_source], al       ; coloca o valor em [tower_source] para o print
+    mov [TOWER_SOURCE], al       ; coloca o valor em [TOWER_SOURCE] para o print
 
     mov eax, [ebp+16]            ; coloca no registrador eax a torre de onde o disco foi
     add al, 64                   ; conversão na tabela ASCII
-    mov [tower_destination], al  ; coloca o valor em [tower_destination] para o print
+    mov [TOWER_DESTINATION], al  ; coloca o valor em [TOWER_DESTINATION] para o print
 
-    mov edx, output_length
-    mov ecx, msg
+    mov edx, OUTPUT_LENGTH
+    mov ecx, OUTPUT_MESSAGE
     mov ebx, STDOUT
     mov eax, sys_write
     int sys_call
