@@ -18,6 +18,17 @@ section .data
     INPUT_ERROR_MESSAGE db "Error: Invalid number entered. The number of disks must be > 0", EOL, 0
     error_len equ $-INPUT_ERROR_MESSAGE
 
+    ; Mensagem para exibir o número de movimentos
+    num_cal db "Minimum number of movements required is:", 0
+    len_cal equ $-num_cal
+
+    finalizar db "Algorithm Concluded!", EOL, 0
+    finalizar_len equ $-finalizar
+
+    buffer db '', 0, EOL
+    buffer_len equ $ - buffer
+    num_buffer db 5, 0, EOL    ; Buffer para armazenar o número convertido em string
+
     ; Mensagem para exibir o movimento dos discos
     OUTPUT_MESSAGE:     db "Move disk "
     DISK_NUMBER:        db  " "           ; disco a ser movido
@@ -51,6 +62,33 @@ _start:
     ; Verificar e converter a string para inteiro
     call converter_valor
 
+    ; Exemplo de uso da função:
+    ; mov ebx, 5          ; Suponha que queremos calcular (2^5) - 1
+    ; Movendo o valor de entrada do usuário para ebx
+    mov ebx, eax
+    call power_of_two_minus_one
+
+    ; Converte o número em eax para string em num_buffer
+    mov edi, num_buffer
+    call int_to_string
+
+    ; Imprimir movimentos
+    mov eax, sys_write          ; syscall number for sys_write
+    mov ebx, STDOUT             ; file descriptor 1 is stdout
+    mov ecx, num_cal
+    mov edx, len_cal
+    int sys_call                 ; chamar o kernel
+
+    ; Imprimir o número
+    mov eax, sys_write           ; syscall number for sys_read
+    mov ebx, STDOUT              ; file descriptor 0 is stdin
+    mov ecx, buffer
+    mov edx, 5                   ; tamanho da entrada (ler até 2 algarismos)
+    int sys_call                 ; chamar o kernel
+
+    ; Verificar e converter a string para inteiro
+    call converter_valor
+
     ; Empurrando as torres e a quantidade de discos na pilha de referencia para que fiquem em ordem
     push dword 2                  ; Torre Auxiliar
     push dword 3                  ; Torre Destino
@@ -58,9 +96,42 @@ _start:
     push eax                      ; Número de discos inserido pelo usuário
 
     call tower_of_hanoi
+
+    ; Exibir a mensagem de finalização do algoritmo
+    mov eax, sys_write
+    mov ebx, STDOUT
+    mov ecx, finalizar
+    mov edx, finalizar_len
+    int sys_call
     call exit
 
-; Função para verificar e converter a entrada de string para inteiro
+power_of_two_minus_one:
+    ; Calcular 2^valor - 1
+    ; O valor está em ebx
+    mov ecx, ebx        ; Guardar valor em ecx para usar como contador de deslocamento
+    mov eax, 1          ; Começar com 2^0, que é 1
+    shl eax, cl         ; Deslocar eax à esquerda por cl (valor de ecx, que é o valor de ebx)
+    dec eax             ; Subtrair 1 de eax
+    ret                 ; Retornar, resultado está em eax
+
+int_to_string:
+    ; Converte o valor em eax para string em edi (num_buffer)
+    mov ecx, 10         ; divisor para obter dígitos
+    mov esi, edi        ; guardar o início do buffer
+
+convert_loop:
+    xor edx, edx        ; limpar edx
+    div ecx             ; dividir eax por 10
+    add dl, '0'         ; converter o resto em caractere ASCII
+    dec edi             ; mover o ponteiro do buffer para trás
+    mov [edi], dl       ; armazenar o caractere no buffer
+    test eax, eax       ; verificar se eax é zero
+    jnz convert_loop    ; se não, continuar
+    mov ecx, esi        ; recuperar o início do buffer original
+    sub ecx, edi        ; calcular o comprimento da string
+    mov eax, ecx        ; colocar o comprimento da string em eax
+    ret
+
 converter_valor:
     lea esi, [NUM_DISKS]
     mov ecx, 2 ; tamanho máximo da entrada
@@ -122,7 +193,7 @@ tower_of_hanoi:
     mov eax, [ebp+8]              ; move para o registrador ax o numero de discos na Torre de origem
 
     cmp eax, 0                    ; verifica se Ainda há disco a ser movido na torre de origem
-    je end_procedure              ; caso nao tenha nunhum disco, pula finalizar o procedimento recursivo
+    je end_procedure              ; caso nao tenha nunhum disco, vai finalizar o procedimento recursivo
 
     ; Primeira chamada recursiva
     push dword [ebp+16]           ; Empurra a torre Auxiliar
@@ -150,7 +221,7 @@ tower_of_hanoi:
     dec eax                       ; tira o disco do topo da torre de origem para ser colocado outra torre
     push dword eax                ; empurra o numero de discos restantes a serem movidos na Torre de origem
 
-    call tower_of_hanoi           ; chama a label tower_of_hanoi para guardar a linha de retorno (recursao)
+    call tower_of_hanoi
 
 end_procedure:
     mov esp, ebp
@@ -163,7 +234,7 @@ print_disk_movement:
 
     mov eax, [ebp+8]             ; coloca no registrador eax o disco a ser movido
     add al, 48                   ; conversão na tabela ASCII
-    mov [DISK_NUMBER], al               ; coloca o valor em [DISK_NUMBER] para o print
+    mov [DISK_NUMBER], al        ; coloca o valor em [DISK_NUMBER] para o print
 
     mov eax, [ebp+12]            ; coloca no registrador eax a torre de onde o disco saiu
     add al, 64                   ; conversão na tabela ASCII
