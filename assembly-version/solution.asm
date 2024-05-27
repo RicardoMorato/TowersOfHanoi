@@ -105,7 +105,7 @@ exit:
 
 ; Função para verificar e converter a entrada de string para inteiro
 converter_valor:
-    lea esi, [num_disks]
+    lea esi, [disk_number]
     mov ecx, 2 ; tamanho máximo da entrada
     call string_to_int
     test eax, eax
