@@ -119,14 +119,14 @@ int_to_string:
     mov ecx, 10         ; divisor para obter dígitos
     mov esi, edi        ; guardar o início do buffer
 
-convert_loop:
+.convert_loop:
     xor edx, edx        ; limpar edx
     div ecx             ; dividir eax por 10
     add dl, '0'         ; converter o resto em caractere ASCII
     dec edi             ; mover o ponteiro do buffer para trás
     mov [edi], dl       ; armazenar o caractere no buffer
     test eax, eax       ; verificar se eax é zero
-    jnz convert_loop    ; se não, continuar
+    jnz .convert_loop   ; se não, continuar
     mov ecx, esi        ; recuperar o início do buffer original
     sub ecx, edi        ; calcular o comprimento da string
     mov eax, ecx        ; colocar o comprimento da string em eax
@@ -164,7 +164,7 @@ string_to_int:
     cmp al, EOL
     je end_convert
     cmp al, '0'
-    jb invalid_input ; se o caractere for menor que '0', é inválido
+    jl invalid_input ; se o caractere for menor que '0', é inválido
     sub al, '0'
     imul ebx, ebx, 10
     add ebx, eax ; ebx = ebx*10 + eax
